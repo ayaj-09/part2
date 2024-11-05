@@ -2,8 +2,8 @@ import {useState,useEffect} from 'react'
 import Filter from './components/Filter'
 import PersonForm from './components/PersonForm'
 import Persons from './components/Persons'
-import axios from 'axios'
 import personService from './Service/persons'
+import Notification from './components/Notification'
 
 const App = () =>{
 
@@ -11,6 +11,7 @@ const App = () =>{
   const [newName,setnewName] = useState('')
   const [newNumber,setNewNumber] = useState('')
   const [search,setSearch] = useState('')
+  const [message,setMessage] = useState(null)
 
   useEffect(()=>{
     personService
@@ -20,8 +21,18 @@ const App = () =>{
       })
   },[])
 
+  const changeMessage = (message) => {
+    setMessage(message)
+    setTimeout(()=>{
+      setMessage(null)
+    },2000)
+  }
+
   const addPerson = (event) => {
     event.preventDefault()
+    if(newName==''&&newNumber==''){
+      return null
+    }
     const person = persons.find(person=>person.name.toLowerCase()===newName.toLowerCase())
     if(person){
       return window.confirm(`${newName} is already to phonebook, replace old number with new one.`)&&
@@ -31,6 +42,11 @@ const App = () =>{
           setPersons(persons.map(prsn=>prsn.id===p.id?p:prsn))
           setnewName('')
           setNewNumber('')
+          changeMessage(`Updated ${p.name}`)
+        })
+        .catch(error=>{
+          changeMessage(`Information of ${person.name} has already been deleted from server`)
+          setPersons(persons.filter(p=>p.id!==person.id))
         })
     }
     const personObject = {
@@ -44,6 +60,7 @@ const App = () =>{
         setPersons(persons.concat(newPerson))
         setnewName('')
         setNewNumber('')
+        changeMessage(`Added ${newPerson.name}`)
       })  
   }
 
@@ -60,7 +77,8 @@ const App = () =>{
   return (
     <div>
       <h1>Phonebook</h1>
-
+      <Notification message={message}/>
+      <br/>
       <Filter searchValue = {search} handleChange = {(event)=>setSearch(event.target.value)} />
 
       <PersonForm 
