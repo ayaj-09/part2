@@ -3,6 +3,7 @@ import Filter from './components/Filter'
 import PersonForm from './components/PersonForm'
 import Persons from './components/Persons'
 import axios from 'axios'
+import personService from './Service/persons'
 
 const App = () =>{
 
@@ -12,26 +13,46 @@ const App = () =>{
   const [search,setSearch] = useState('')
 
   useEffect(()=>{
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response=>{
-        setPersons(response.data)
+    personService
+      .getAll()
+      .then(initialPersons=>{
+        setPersons(initialPersons)
       })
   },[])
 
   const addPerson = (event) => {
     event.preventDefault()
-    if(persons.some(person=>
-      person.name.toLowerCase()===newName.toLowerCase())){
-      return alert(`${newName} already Exists`)
+    const person = persons.find(person=>person.name.toLowerCase()===newName.toLowerCase())
+    if(person){
+      return window.confirm(`${newName} is already to phonebook, replace old number with new one.`)&&
+      personService
+        .updatePerson(person.id,{...person,number:newNumber})
+        .then(p=>{
+          setPersons(persons.map(prsn=>prsn.id===p.id?p:prsn))
+          setnewName('')
+          setNewNumber('')
+        })
     }
-    setPersons(persons.concat({
+    const personObject = {
       name:newName,
-      number:newNumber,
-      id:persons.length+1
-    }))
-    setnewName('')
-    setNewNumber('')
+      number:newNumber
+    }
+
+    personService
+      .createPerson(personObject)
+      .then(newPerson=>{
+        setPersons(persons.concat(newPerson))
+        setnewName('')
+        setNewNumber('')
+      })  
+  }
+
+  const deletePerson = (id) => {
+    const person = persons.find(p=>p.id===id)
+    window.confirm(`Delete ${person.name}?`)&&
+    personService
+      .deletePerson(id)
+      .then(res=>setPersons(persons.filter(p=>p.id!==id)))  
   }
 
   const personsToShow = search ? persons.filter(person=>person.name.toLowerCase().includes(search.toLowerCase())) : persons
@@ -50,7 +71,7 @@ const App = () =>{
 
       <h1>Numbers</h1>
 
-      <Persons persons = {personsToShow} />
+      <Persons persons = {personsToShow} deletePerson = {deletePerson}/>
     </div>
   )
 }
