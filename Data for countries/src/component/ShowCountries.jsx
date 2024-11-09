@@ -8,7 +8,6 @@ const ShowCountries = ({countries}) => {
         setCountry(countries)
     },[countries])
 
-    console.log()
     if(country===null){
         return null
     }
